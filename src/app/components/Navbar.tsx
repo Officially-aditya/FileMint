@@ -1,3 +1,4 @@
+// C:\Users\khush\OneDrive\Documents\Desktop\file\code1\FileMint\src\app\components\Navbar.tsx
 import Link from "next/link";
 
 export default function Header() {

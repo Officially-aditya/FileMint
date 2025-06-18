@@ -1,5 +1,6 @@
-import Navbar from "./components/Navbar";
-import HomePage from "./components/HomePage";
+// src/app/page.tsx
+import Navbar from './components/Navbar'
+import HomePage from './components/HomePage'
 
 export default function Home() {
   return (
@@ -7,5 +8,5 @@ export default function Home() {
       <Navbar />
       <HomePage />
     </>
-  );
+  )
 }

@@ -1,3 +1,4 @@
+// C:\Users\khush\OneDrive\Documents\Desktop\file\code1\FileMint\src\app\layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
