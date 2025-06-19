@@ -131,7 +131,6 @@ export default function AllTools() {
       ],
     },
   ];
-
   const filtered = columns.map(col => ({
     ...col,
     items: col.items.filter(t =>
