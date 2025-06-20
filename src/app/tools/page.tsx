@@ -11,6 +11,7 @@ export default function ToolsPage() {
   return (
     <>
       <Navbar />
+      
       <AllTools />
     </>
   )

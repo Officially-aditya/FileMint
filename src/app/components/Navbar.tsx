@@ -76,6 +76,9 @@ export default function Navbar() {
                 More
               </Link>
             </li>
+
+
+            
           </ul>
         </nav>
 
