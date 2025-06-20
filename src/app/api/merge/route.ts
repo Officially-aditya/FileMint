@@ -1,6 +1,6 @@
-// src/app/api/merge/route.ts
-import { PDFDocument } from 'pdf-lib';
 import { NextRequest, NextResponse } from 'next/server';
+import pdfParse from 'pdf-parse';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -10,22 +10,51 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No files provided' }, { status: 400 });
   }
 
-  const mergedPdf = await PDFDocument.create();
+  const pdfFile = files[0]; // Assuming we're only dealing with one PDF
 
-  for (const file of files) {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await PDFDocument.load(arrayBuffer);
-    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-    copiedPages.forEach((page) => mergedPdf.addPage(page));
+  if (!pdfFile.type.includes('pdf')) {
+    return NextResponse.json({ error: 'Only PDF files are supported.' }, { status: 400 });
   }
 
-  const mergedPdfBytes = await mergedPdf.save();
+  const arrayBuffer = await pdfFile.arrayBuffer();
+  let pdfData;
+  try {
+    // Convert ArrayBuffer to Buffer
+    pdfData = await pdfParse(Buffer.from(arrayBuffer)); // <-- Fixed here
+  } catch (parseError: unknown) {
+    if (parseError instanceof Error) {
+      return NextResponse.json(
+        { error: `Error parsing PDF: ${parseError.message}` },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: 'Unknown error occurred while parsing the PDF' },
+      { status: 400 }
+    );
+  }
 
-  return new NextResponse(mergedPdfBytes, {
+  const extractedText = pdfData.text;
+
+  const doc = new Document({
+    sections: [
+      {
+        children: extractedText
+          .split('\n')
+          .map((line) => new Paragraph({
+            children: [new TextRun(line.trim())],
+          })),
+      },
+    ],
+  });
+
+  const docBuffer = await Packer.toBuffer(doc);
+
+  return new NextResponse(docBuffer, {
     status: 200,
     headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="merged.pdf"',
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': 'attachment; filename="converted.docx"',
     },
   });
 }
