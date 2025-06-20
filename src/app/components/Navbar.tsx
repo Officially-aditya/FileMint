@@ -1,124 +1,105 @@
-// C:\Users\khush\OneDrive\Documents\Desktop\file\code1\FileMint\src\app\components\Navbar.tsx
+// src/app/components/Navbar.tsx
 import Link from "next/link";
 
-export default function Header() {
+export default function Navbar() {
   return (
     <header
       style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "1rem 10rem",
-        gap: "1rem",
-        position: "relative",
+        backgroundColor: "#add8e6",
+        padding: "1rem 5%",
       }}
     >
-      <div style={{ position: "absolute", left: "2rem" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          maxWidth: "1200px",
+          margin: "0 auto",
+        }}
+      >
+        {/* Logo */}
         <Link href="/">
           <img
             src="/logo.png"
-            alt="Logo"
+            alt="FileMint Logo"
             style={{ height: "40px", cursor: "pointer" }}
           />
         </Link>
-      </div>
-      <nav
-        style={{
-          backgroundColor: "#add8e6",
-          padding: "1.3rem 2.5rem",
-          borderRadius: "20px",
-          width: "25%",
-          margin: "0 auto",
-          textAlign: "center",
-          marginTop: "10px",
-        }}
-      >
-        <ul
-          style={{
-            display: "flex",
-            justifyContent: "space-around",
-            listStyle: "none",
-            margin: 0,
-            padding: 0,
-            fontSize: "1.1rem",
-          }}
-        >
-          <li>
-            <Link href="/" style={{ color: "black", textDecoration: "none" }}>
-              HomePage
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/tools"
-              style={{ color: "black", textDecoration: "none" }}
-            >
-              Tools
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/blogs"
-              style={{ color: "black", textDecoration: "none" }}
-            >
-              Blogs
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/about"
-              style={{ color: "black", textDecoration: "none" }}
-            >
-              About
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/more"
-              style={{ color: "black", textDecoration: "none" }}
-            >
-              More
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/language"
-              style={{ color: "black", textDecoration: "none" }}
-            >
-              🌐
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/settings"
-              style={{ color: "black", textDecoration: "none" }}
-            >
-              ⚙️
-            </Link>
-          </li>
-        </ul>
-      </nav>
-      <div style={{ position: "absolute", right: "2rem" }}>
-        <Link href="/profile">
-          <div
+
+        {/* Main nav */}
+        <nav>
+          <ul
             style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              backgroundColor: "",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
+              gap: "2rem",               // <-- more breathing room
+              listStyle: "none",
+              margin: 0,
+              padding: 0,
+              fontSize: "1.1rem",
             }}
           >
+            <li>
+              <Link href="/" style={{ textDecoration: "none", color: "black" }}>
+                Home page
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/tools"
+                style={{ textDecoration: "none", color: "black" }}
+              >
+                Tools
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/blogs"
+                style={{ textDecoration: "none", color: "black" }}
+              >
+                Blogs
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/about"
+                style={{ textDecoration: "none", color: "black" }}
+              >
+                About
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/more"
+                style={{ textDecoration: "none", color: "black" }}
+              >
+                More
+              </Link>
+            </li>
+          </ul>
+        </nav>
+
+        {/* Globe, settings & profile */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          <Link href="/language" style={{ fontSize: "1.2rem" }}>
+            🌐
+          </Link>
+          <Link href="/settings" style={{ fontSize: "1.2rem" }}>
+            ⚙️
+          </Link>
+          <Link href="/profile">
             <img
               src="/profile-icon.png"
-              alt="Profile"
-              style={{ width: "50px", height: "50px", borderRadius: "50%" }}
+              alt="Your Profile"
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
             />
-          </div>
-        </Link>
+          </Link>
+        </div>
       </div>
     </header>
   );
