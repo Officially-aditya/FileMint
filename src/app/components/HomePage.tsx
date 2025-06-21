@@ -143,10 +143,10 @@ export default function HomePage() {
               route: "/comparepdf",
             },
             {
-              title: "Optimize PDF",
-              icon: "fas fa-code-branch",
+              title: "Word to PDF",
+              icon: "fas fa-file-pdf",
               color: "#E5F0FF",
-              route: "/optimizepdf",
+              route: "/wordtopdf",
             },
           ].map((tool, index) => (
             <Link href={tool.route} key={index} style={{ textDecoration: "none" }}>
