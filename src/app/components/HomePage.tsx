@@ -842,33 +842,27 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Navigation */}
-            <nav style={{ display: "flex", gap: "2rem", fontSize: "0.9rem" }}>
-              <Link
-                href="/faq"
-                style={{ color: "#666", textDecoration: "none" }}
-              >
-                FAQ Section
-              </Link>
-              <Link
-                href="/blog"
-                style={{ color: "#666", textDecoration: "none" }}
-              >
-                Blog Posts
-              </Link>
-              <Link
-                href="/contact"
-                style={{ color: "#666", textDecoration: "none" }}
-              >
-                Contact Us
-              </Link>
-              <Link
-                href="/help"
-                style={{ color: "#666", textDecoration: "none" }}
-              >
-                Help Center
-              </Link>
-            </nav>
+{/* Navigation */}
+         <nav style={{ display: "flex", gap: "2rem", fontSize: "0.9rem" }}>
+  <Link href="/about" style={{ color: "#666", textDecoration: "none" }}>
+    About
+  </Link>
+  <Link href="/blog" style={{ color: "#666", textDecoration: "none" }}>
+    Blog Posts
+  </Link>
+  <Link href="/faq" style={{ color: "#666", textDecoration: "none" }}>
+    FAQ
+  </Link>
+  <Link href="/terms" style={{ color: "#666", textDecoration: "none" }}>
+    Terms & Conditions
+  </Link>
+  <Link href="/privacy-policy" style={{ color: "#666", textDecoration: "none" }}>
+    Privacy Policy
+  </Link>
+</nav>
+
+
+
 
             {/* Social Icons */}
             <div style={{ display: "flex", gap: "1rem" }}>
