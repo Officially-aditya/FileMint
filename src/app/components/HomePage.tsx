@@ -200,6 +200,7 @@ export default function HomePage() {
             marginLeft: "auto",
             marginRight: "auto",
           }}
+          
         >
           <Link
             href="/all"
@@ -214,6 +215,9 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+      src="/profile-icon.png"
+
+
 
       {/* Easy Convert Your Files Section */}
       <section style={{ padding: "4rem 0" }}>
