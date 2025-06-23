@@ -847,7 +847,7 @@ export default function HomePage() {
   <Link href="/about" style={{ color: "#666", textDecoration: "none" }}>
     About
   </Link>
-  <Link href="/blog" style={{ color: "#666", textDecoration: "none" }}>
+  <Link href="/blogs" style={{ color: "#666", textDecoration: "none" }}>
     Blog Posts
   </Link>
   <Link href="/faq" style={{ color: "#666", textDecoration: "none" }}>
