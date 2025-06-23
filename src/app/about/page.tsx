@@ -1,13 +1,16 @@
 // src/app/about/page.tsx (if using app directory structure)
 import React from "react";
 import Link from "next/link";
+import Navbar from "../components/Navbar"
 
 const AboutPage = () => {
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem" }}>
-      <h1>Why Choose FileMint.com</h1>
+    <div style={{ margin: "0 auto" }}>
+      <Navbar />
+      <div style = {{ maxWidth: "1200px", margin: "0 auto", padding: "2rem"}}>
+      <h1 style={{ fontSize: "4rem" }}>Why Choose FileMint.com</h1>
       <p>
-        <strong>Fast, Secure & User-Friendly File Conversion</strong>
+        <h3 style={{fontSize: "2rem"}}>Fast, Secure & User-Friendly File Conversion</h3>
         <br />
         Our platform empowers users to convert, compress, and manage documents
         quickly and easily — with zero learning curve. Whether you're merging
@@ -48,6 +51,7 @@ const AboutPage = () => {
           </p>
         </div>
       </div>
+    </div>
 
       {/* Footer */}
       <footer
