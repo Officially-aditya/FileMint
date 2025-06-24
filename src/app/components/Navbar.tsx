@@ -97,6 +97,14 @@ export default function Header() {
           </li>
         </ul>
       </nav>
+      <div style={{marginRight:"100px"}}>
+        <Link 
+        href='/login' 
+        style={{ color: "black", textDecoration: "none" }}
+        >
+          Login
+        </Link>
+      </div>
       <div style={{ position: "absolute", right: "2rem" }}>
         <Link href="/profile">
           <div
