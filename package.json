@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@juggle/resize-observer": "^3.4.0",
+    "adm-zip": "^0.5.16",
     "docx": "^9.5.1",
     "formidable": "^3.5.4",
     "lucide-react": "^0.516.0",
@@ -23,15 +24,19 @@
     "pdfjs-dist": "^5.3.31",
     "puppeteer": "^24.10.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sharp": "^0.34.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/adm-zip": "^0.5.7",
     "@types/node": "^20",
     "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/unzipper": "^0.10.11",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
