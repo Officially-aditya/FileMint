@@ -317,6 +317,77 @@ export default function AllToolsPage() {
             </div>
           </section>
         ))}
+        {/* Footer */}
+      <footer
+        style={{
+          backgroundColor: "white",
+          padding: "2rem 0",
+          borderTop: "1px solid #e5e7eb",
+        }}
+      >
+        <div
+          style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 2rem" }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "2rem",
+            }}
+          >
+            {/* Logo */}
+            <div style={{ position: "absolute", left: "2rem" }}>
+              <Link href="/">
+                <img
+                  src="/logo.png"
+                  alt="Logo"
+                  style={{ height: "20px", cursor: "pointer" }}
+                />
+              </Link>
+            </div>
+
+{/* Navigation */}
+         <nav style={{ display: "flex", gap: "2rem", fontSize: "0.9rem" }}>
+  <Link href="/about" style={{ color: "#666", textDecoration: "none" }}>
+    About
+  </Link>
+  <Link href="/blogs" style={{ color: "#666", textDecoration: "none" }}>
+    Blog Posts
+  </Link>
+  <Link href="/faq" style={{ color: "#666", textDecoration: "none" }}>
+    FAQ
+  </Link>
+  <Link href="/terms" style={{ color: "#666", textDecoration: "none" }}>
+    Terms & Conditions
+  </Link>
+  <Link href="/privacy-policy" style={{ color: "#666", textDecoration: "none" }}>
+    Privacy Policy
+  </Link>
+</nav>
+
+
+
+
+            {/* Social Icons */}
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <a href="#" style={{ color: "#666", fontSize: "1.2rem" }}>
+                <i className="fab fa-facebook"></i>
+              </a>
+              <a href="#" style={{ color: "#666", fontSize: "1.2rem" }}>
+                <i className="fab fa-instagram"></i>
+              </a>
+              <a href="#" style={{ color: "#666", fontSize: "1.2rem" }}>
+                <i className="fab fa-twitter"></i>
+              </a>
+              <a href="#" style={{ color: "#666", fontSize: "1.2rem" }}>
+                <i className="fas fa-envelope"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
       </div>
     </>
   );

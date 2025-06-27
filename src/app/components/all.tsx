@@ -117,6 +117,7 @@ export default function All() {
           ))}
         </div>
       </div>
+      
     </div>
   );
 }
