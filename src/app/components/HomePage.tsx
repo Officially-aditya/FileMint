@@ -215,7 +215,6 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
-      src="/profile-icon.png"
 
 
 

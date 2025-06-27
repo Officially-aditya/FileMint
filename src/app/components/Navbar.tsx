@@ -49,7 +49,7 @@ export default function Header() {
           </li>
           <li>
             <Link
-              href="/tools"
+              href="/all"
               style={{ color: "black", textDecoration: "none" }}
             >
               Tools
