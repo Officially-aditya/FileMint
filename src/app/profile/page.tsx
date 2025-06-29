@@ -1,217 +1,373 @@
+// src/app/settings/page.tsx
 'use client';
+import React, { useState, FormEvent } from "react";
 
-import { useState } from 'react';
-import Image from 'next/image';
-import Navbar from '../components/Navbar';
-import SubscriptionPage from '../components/SubscriptionPage';  // Import SubscriptionPage
-import SettingsPage from '../components/SettingsPage';  // Import SettingsPage
+const SettingsPage: React.FC = () => {
+  // 1) include 'signup'
+  const [activeTab, setActiveTab] = useState<"account" | "subscription" | "settings" | "signup">("account");
 
-export default function AccountPage() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [currentPwd, setCurrentPwd] = useState('');
-  const [newPwd, setNewPwd] = useState('');
-  const [repeatPwd, setRepeatPwd] = useState('');
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showRepeat, setShowRepeat] = useState(false);
+  const SidebarItem = (label: string, key: "account" | "subscription" | "settings" | "signup") => (
+    <div
+      onClick={() => setActiveTab(key)}
+      style={{
+        width: "80%",
+        height: "30px",
+        padding: "1rem 2rem",
+        cursor: "pointer",
+        fontWeight: 600,
+        color: "#1e1e1e",
+        backgroundColor: activeTab === key ? "#e6e8f2" : "transparent",
+        borderLeft: activeTab === key ? "4px solid #1e2b50" : "none",
+      }}
+    >
+      {label}
+    </div>
+  );
 
-  const [activePage, setActivePage] = useState('account'); // Manage page view
-  const [notification, setNotification] = useState<string | null>(null); // Notification state
-
-  const handleNavigation = (page: string) => {
-    setActivePage(page);
-    setNotification(null); // Reset notification on page change
-  };
-
-  const saveChanges = () => {
-    setNotification('Your changes have been saved successfully!'); // Example notification
+  // stub for signup submission
+  const handleSignUp = (e: FormEvent) => {
+    e.preventDefault();
+    alert("Signed up!");
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar Section */}
-      <aside className="w-80 bg-white shadow-lg p-8 flex flex-col items-start space-y-8 border-r-2 border-gray-200">
-        <div className="flex flex-col items-center mb-12">
-          <Image
-            src="/logo.png" // Your logo path here
-            alt="FileMint Logo"
-            width={96}
-            height={96}
-            className="full border-4 border-indigo-600 mb-4"
-          />
-          <span className="text-3xl font-bold text-gray-800">OB</span>
+    <div style={{ display: "flex", fontFamily: "Georgia, serif", height: "100vh", backgroundColor: "#fdf9f7" }}>
+      {/* Sidebar */}
+      <div
+        style={{
+          width: "360px",
+          backgroundColor: "#f7f7f9",
+          borderRight: "1px solid #ddd",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          paddingTop: "2rem",
+        }}
+      >
+        <div style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "3rem", color: "#1e1e2f" }}>
+          FileMint
         </div>
 
-        {/* Navigation Links */}
-        <nav className="w-full">
-          <ul className="space-y-6">
-            {/* Account Button */}
-            <li>
-              <button
-                onClick={() => handleNavigation('account')}
-                className={`text-2xl font-bold text-gray-700 flex items-center space-x-3 hover:text-indigo-600 ${activePage === 'account' ? 'bg-indigo-100 p-3 rounded-md' : ''}`}
-              >
-                <i className="fas fa-user text-xl"></i>
-                <span className="text-xl font-bold">Account</span>
-                {activePage === 'account' && <span className="bg-blue-500 text-white text-xs py-1 px-2 rounded-full">Active</span>}
-              </button>
-            </li>
-
-            {/* Subscription Button */}
-            <li>
-              <button
-                onClick={() => handleNavigation('subscription')}
-                className={`text-2xl font-bold text-gray-700 flex items-center space-x-3 hover:text-indigo-600 ${activePage === 'subscription' ? 'bg-indigo-100 p-3 rounded-md' : ''}`}
-              >
-                <i className="fas fa-gem text-xl"></i>
-                <span className="text-xl font-bold">Subscription</span>
-                {activePage === 'subscription' && <span className="bg-green-500 text-white text-xs py-1 px-2 rounded-full">Pro</span>}
-              </button>
-            </li>
-
-            {/* Settings Button */}
-            <li>
-              <button
-                onClick={() => handleNavigation('settings')}
-                className={`text-2xl font-bold text-gray-700 flex items-center space-x-3 hover:text-indigo-600 ${activePage === 'settings' ? 'bg-indigo-100 p-3 rounded-md' : ''}`}
-              >
-                <i className="fas fa-cogs text-xl"></i>
-                <span className="text-xl font-bold">Settings</span>
-                {activePage === 'settings' && <span className="bg-yellow-500 text-white text-xs py-1 px-2 rounded-full">New</span>}
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        {/* Log Out Button */}
-        <button
-          className="mt-auto px-6 py-4 bg-indigo-600 text-white text-center font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-all"
+        {/* Profile Image */}
+        <div
+          style={{
+            width: "100px",
+            height: "100px",
+            borderRadius: "50%",
+            backgroundColor: "#1e2b50",
+            color: "#fff",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            fontSize: "24px",
+            marginBottom: "2rem",
+          }}
         >
-          <i className="fas fa-sign-out-alt mr-2"></i>
+          OB
+        </div>
+
+        {SidebarItem("Account", "account")}
+        {SidebarItem("Subscription", "subscription")}
+        {SidebarItem("Settings", "settings")}
+        {SidebarItem("Sign Up", "signup") /* added */}
+
+        {/* Logout Button */}
+        <button
+          style={{
+            marginTop: "auto",
+            width: "80%",
+            padding: "1rem 2rem",
+            backgroundColor: "#e63946",
+            color: "#fff",
+            fontWeight: 600,
+            cursor: "pointer",
+            border: "none",
+            borderRadius: "8px",
+            textAlign: "center",
+            fontSize: "16px",
+          }}
+        >
           Log Out
         </button>
-      </aside>
+      </div>
 
       {/* Main Content */}
-      <main className="flex-1 p-12">
-        <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-lg p-8 space-y-8">
-          {/* Notification */}
-          {notification && (
-            <div className="p-4 bg-green-100 text-green-700 rounded-md mb-4">
-              <i className="fas fa-check-circle mr-2"></i>{notification}
-            </div>
-          )}
+      <div style={{ flex: 1, padding: "3rem" }}>
+        {activeTab === "account" && (
+          <>
+            <div style={{ fontSize: "32px", fontWeight: "bold", marginBottom: "1rem" }}>Account</div>
 
-          {activePage === 'account' && (
-            <>
-              <h1 className="text-4xl font-bold text-gray-800 mb-6">Account</h1>
-              {/* Profile Section */}
-              <div className="flex items-center gap-6 mb-8">
-                <Image
-                  src="/profile-icon.png" // Your profile image path here
-                  alt="Your avatar"
-                  width={100}
-                  height={100}
-                  className="rounded-full border-4 border-gray-300 shadow-md"
+            <div style={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
+              <img
+                src="/profile-icon.png"
+                alt="Profilepic"
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  marginRight: "1rem",
+                }}
+              />
+              <div style={{ color: "#000", fontSize: "16px", cursor: "pointer" }}>✏️ Update profile</div>
+            </div>
+
+            <div>
+              <div style={{ fontWeight: 600, marginTop: "1rem" }}>Email</div>
+              <div style={{ margin: "4px 0" }}>oliviabennet123@gmail.com</div>
+              <div style={{ color: "#304ffe", textDecoration: "underline", cursor: "pointer" }}>Change</div>
+            </div>
+
+            <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", maxWidth: "400px" }}>
+              <label>First Name</label>
+              <input
+                type="text"
+                placeholder="First Name"
+                style={{
+                  padding: "15px 10px",
+                  fontSize: "14px",
+                  borderRadius: "6px",
+                  border: "1px solid #ccc",
+                  marginTop: "0.5rem",
+                  marginBottom: "0.8rem",
+                }}
+              />
+              <label>Last Name</label>
+              <input
+                type="text"
+                placeholder="Last Name"
+                style={{
+                  padding: "15px 10px",
+                  fontSize: "14px",
+                  borderRadius: "6px",
+                  border: "1px solid #ccc",
+                  marginTop: "0.5rem",
+                  marginBottom: "0.8rem",
+                }}
+              />
+              <button
+                style={{
+                  backgroundColor: "#1e2b50",
+                  color: "#fff",
+                  padding: "15px 20px",
+                  fontSize: "16px",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  marginTop: "0.5rem",
+                }}
+              >
+                Save Changes
+              </button>
+            </div>
+
+            <div style={{ fontSize: "20px", fontWeight: 600, marginTop: "2rem" }}>Change Password</div>
+            <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", maxWidth: "400px" }}>
+              {["Current Password", "New Password", "Repeat Password"].map((label, index) => (
+                <div key={index} style={{ position: "relative", marginBottom: "1rem" }}>
+                  <input
+                    type="password"
+                    placeholder={label}
+                    style={{
+                      padding: "15px 12px",
+                      fontSize: "14px",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                      width: "100%",
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    👁️
+                  </span>
+                </div>
+              ))}
+              <button
+                style={{
+                  backgroundColor: "#1e2b50",
+                  color: "#fff",
+                  padding: "15px 20px",
+                  fontSize: "16px",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  marginTop: "0.5rem",
+                }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </>
+        )}
+
+        {activeTab === "subscription" && (
+          <>
+            <div style={{ fontSize: "32px", fontWeight: "bold", marginBottom: "1.5rem" }}>Subscriptions</div>
+            <div
+              style={{
+                color: "#304ffe",
+                textDecoration: "underline",
+                fontWeight: 600,
+                marginBottom: "1.5rem",
+                cursor: "pointer",
+              }}
+            >
+              Upgrade to Premium 💎
+            </div>
+            {[
+              "Full access to all tools in FileMint",
+              "Unlimited storage for all your files",
+              "Work on Web, Mobile and Desktop",
+              "Convert scanned PDF to Word with ORC, Sign with digital signatures, audio to PDF, PDF language Converter, API Generator, Bulk PDF Merge",
+              "No Ads.",
+            ].map((item, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", marginBottom: "1rem", fontSize: "18px" }}>
+                <span style={{ color: "green", fontSize: "20px", marginRight: "10px" }}>✓</span> {item}
+              </div>
+            ))}
+          </>
+        )}
+
+        {activeTab === "settings" && (
+          <>
+            <div style={{ fontSize: "32px", fontWeight: "bold", marginBottom: "1.5rem" }}>Preferences</div>
+
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ fontWeight: 600, fontSize: "18px" }}>Language</div>
+              <div style={{ margin: "4px 0" }}>English</div>
+              <div style={{ color: "#304ffe", textDecoration: "underline", cursor: "pointer" }}>Change</div>
+            </div>
+
+            <div style={{ marginBottom: "2rem" }}>
+              <div style={{ fontWeight: 600, fontSize: "18px" }}>Email Notifications</div>
+              <div style={{ margin: "4px 0" }}>
+                No longer wish to receive promotional emails from us? You can do so here.
+              </div>
+              <div style={{ color: "red", cursor: "pointer" }}>Disable Emails</div>
+            </div>
+
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "18px" }}>Manage Account</div>
+              <div style={{ color: "red", cursor: "pointer", marginTop: "4px" }}>Delete Account</div>
+            </div>
+          </>
+        )}
+
+        {/* Sign Up panel */}
+        {activeTab === "signup" && (
+          <>
+            <div style={{ fontSize: "32px", fontWeight: "bold", marginBottom: "1.5rem" }}>Create Your Account</div>
+            <form
+              onSubmit={handleSignUp}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                maxWidth: "400px",
+                gap: "1.5rem",
+              }}
+            >
+              {[
+                { name: "firstName", label: "First Name", type: "text" },
+                { name: "lastName", label: "Last Name", type: "text" },
+                { name: "email", label: "Email", type: "email" },
+              ].map(({ name, label, type }) => (
+                <div key={name} style={{ position: "relative" }}>
+                  <input
+                    id={name}
+                    name={name}
+                    type={type}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "20px 12px 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #ccc",
+                      fontSize: "14px",
+                    }}
+                  />
+                  <label
+                    htmlFor={name}
+                    style={{
+                      position: "absolute",
+                      top: "12px",
+                      left: "12px",
+                      fontSize: "12px",
+                      color: "#555",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {label}
+                  </label>
+                </div>
+              ))}
+
+              <div style={{ position: "relative" }}>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "20px 12px 8px",
+                    borderRadius: "6px",
+                    border: "1px solid #ccc",
+                    fontSize: "14px",
+                  }}
                 />
-                <button className="text-gray-600 hover:text-gray-800 flex items-center gap-2 font-semibold">
-                  <i className="fas fa-pencil-alt"></i>
-                  Update profile
-                </button>
+                <label
+                  htmlFor="password"
+                  style={{
+                    position: "absolute",
+                    top: "12px",
+                    left: "12px",
+                    fontSize: "12px",
+                    color: "#555",
+                    pointerEvents: "none",
+                  }}
+                >
+                  Password
+                </label>
+                <small style={{ color: "#888", fontSize: "12px", display: "block" }}>
+                  Must be at least 8 characters
+                </small>
               </div>
 
-              {/* Account Details */}
-              <section className="space-y-6">
-                <h3 className="text-xl font-semibold text-gray-700">Email</h3>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">oliviabennet123@gmail.com</span>
-                  <button className="text-blue-600 hover:underline">Change</button>
-                </div>
-              </section>
-              <section className="space-y-6">
-                <h3 className="text-xl font-semibold text-gray-700">Name</h3>
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="First Name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Last Name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <button onClick={saveChanges} className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-all">
-                    Save Changes
-                  </button>
-                </div>
-              </section>
-              {/* Change Password Section */}
-              <section className="space-y-6">
-                <h3 className="text-xl font-semibold text-gray-700">Change Password</h3>
-                <div className="space-y-6 max-w-md">
-                  <div className="relative">
-                    <input
-                      type={showCurrent ? 'text' : 'password'}
-                      placeholder="Current Password"
-                      value={currentPwd}
-                      onChange={(e) => setCurrentPwd(e.target.value)}
-                      className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 pr-10 focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <button
-                      onClick={() => setShowCurrent(!showCurrent)}
-                      className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                    >
-                      <i className={`fas fa-eye${showCurrent ? '' : '-slash'}`}></i>
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={showNew ? 'text' : 'password'}
-                      placeholder="New Password"
-                      value={newPwd}
-                      onChange={(e) => setNewPwd(e.target.value)}
-                      className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 pr-10 focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <button
-                      onClick={() => setShowNew(!showNew)}
-                      className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                    >
-                      <i className={`fas fa-eye${showNew ? '' : '-slash'}`}></i>
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={showRepeat ? 'text' : 'password'}
-                      placeholder="Repeat New Password"
-                      value={repeatPwd}
-                      onChange={(e) => setRepeatPwd(e.target.value)}
-                      className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 pr-10 focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <button
-                      onClick={() => setShowRepeat(!showRepeat)}
-                      className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-                    >
-                      <i className={`fas fa-eye${showRepeat ? '' : '-slash'}`}></i>
-                    </button>
-                  </div>
-                  <button onClick={saveChanges} className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-all">
-                    Save Changes
-                  </button>
-                </div>
-              </section>
-            </>
-          )}
+              <label style={{ display: "flex", alignItems: "center", fontSize: "14px" }}>
+                <input type="checkbox" required style={{ marginRight: "8px" }} />
+                I agree to the{" "}
+                <a href="#" style={{ color: "#304ffe", textDecoration: "underline", marginLeft: "4px" }}>
+                  Terms & Conditions
+                </a>
+              </label>
 
-          {activePage === 'subscription' && <SubscriptionPage />}
-          {activePage === 'settings' && <SettingsPage />}
-        </div>
-      </main>
+              <button
+                type="submit"
+                style={{
+                  background: "linear-gradient(135deg,#1e2b50,#2d3a6b)",
+                  color: "#fff",
+                  padding: "15px",
+                  fontSize: "16px",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                Sign Up Now
+              </button>
+            </form>
+          </>
+        )}
+      </div>
     </div>
   );
-}
+};
+
+export default SettingsPage;
