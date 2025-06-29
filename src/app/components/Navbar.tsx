@@ -106,7 +106,7 @@ export default function Header() {
         </Link>
       </div>
       <div style={{ position: "absolute", right: "2rem" }}>
-        <Link href="/profile">
+        <Link href="/settings">
           <div
             style={{
               width: "40px",
