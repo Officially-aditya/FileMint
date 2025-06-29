@@ -5,11 +5,6 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <>
-      {/* Font Awesome CDN */}
-      <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-      />
 
       {/* Hero Section */}
       <main
