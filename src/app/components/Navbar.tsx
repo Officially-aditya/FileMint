@@ -1,18 +1,4 @@
 import Link from "next/link";
-const Navbar = () => {
-  return (
-    <div className="sidebar">
-      <div className="logo">My App</div>
-      <div className="profile-section">
-        <img src="profile-image.jpg" alt="Profile" className="profile-img" />
-        <span className="profile-initials">AB</span>
-      </div>
-      <a href="#" className="nav-link">Home</a>
-      <a href="#" className="nav-link">Settings</a>
-      <a href="#" className="nav-link">Logout</a>
-    </div>
-  );
-};
 
 export default function Header() {
   return (
