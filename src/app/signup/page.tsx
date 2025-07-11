@@ -1,11 +1,38 @@
 "use client";
-import React from "react";
+
+import React, { useState } from "react";
 import Link from "next/link";
+import axios from "axios";
 
 const SignUpPage = () => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post("/api/auth/signup", {
+        firstName,
+        lastName,
+        email,
+        password,
+        termsAccepted,
+      });
+
+      // Handle success (for example, redirect to login or show success message)
+      alert(response.data.message);
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <div style={{ marginTop: "150px" }}>
-      {/* Centered Signup Form Section */}
       <div
         style={{
           flex: 1,
@@ -21,7 +48,7 @@ const SignUpPage = () => {
             Create a <span style={{ color: "#1D4ED8" }}>FileMint</span> Account
           </h1>
 
-          <form>
+          <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: "15px" }}>
               <input
                 type="text"
@@ -34,6 +61,8 @@ const SignUpPage = () => {
                   border: "1px solid #ccc",
                 }}
                 required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
               />
               <input
                 type="text"
@@ -46,6 +75,8 @@ const SignUpPage = () => {
                   border: "1px solid #ccc",
                 }}
                 required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
               />
               <input
                 type="email"
@@ -58,6 +89,8 @@ const SignUpPage = () => {
                   border: "1px solid #ccc",
                 }}
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
               <input
                 type="password"
@@ -69,6 +102,8 @@ const SignUpPage = () => {
                   border: "1px solid #ccc",
                 }}
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
               <small
                 style={{
@@ -84,7 +119,13 @@ const SignUpPage = () => {
 
             <div style={{ marginBottom: "20px" }}>
               <label style={{ fontSize: "14px" }}>
-                <input type="checkbox" required style={{ marginRight: "8px" }} />
+                <input
+                  type="checkbox"
+                  required
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  style={{ marginRight: "8px" }}
+                />
                 I agree to the{" "}
                 <a href="#" style={{ color: "#1D4ED8", textDecoration: "underline" }}>
                   Terms & Conditions
@@ -119,6 +160,7 @@ const SignUpPage = () => {
             </div>
           </form>
 
+          {/* Social Login Buttons */}
           <div style={{ textAlign: "center" }}>
             <button
               style={{
