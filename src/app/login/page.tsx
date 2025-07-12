@@ -1,33 +1,35 @@
-"use client"; // Add this line to mark the file as a client-side component
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { useRouter } from "next/navigation"; // Use next/navigation for Next.js 13+
+import { useRouter } from "next/navigation";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(""); // New success message state
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
 
     try {
-      // Send request to the backend API
       const response = await axios.post("/api/auth/login", {
         email,
         password,
       });
 
-      // If successful, you can redirect or store authentication data
-      alert(response.data.message);
-      // For example, redirect to the dashboard
-      router.push("/dashboard");
+      setSuccess(response.data.message);
+      localStorage.setItem("token", response.data.token);
 
-      // Optionally, store JWT in localStorage or cookies
-      localStorage.setItem("token", response.data.token); // or use cookies
+      // Delay navigation by 1 second
+      setTimeout(() => {
+        router.push("/");
+      }, 1000);
     } catch (error: any) {
       console.error(error);
       setError("Invalid email or password. Please try again.");
@@ -83,8 +85,9 @@ const LoginPage = () => {
               />
             </div>
 
-            {/* Show error message if credentials are invalid */}
+            {/* Show error or success message */}
             {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
+            {success && <p style={{ color: "green", textAlign: "center" }}>{success}</p>}
 
             <div style={{ textAlign: "center", marginBottom: "20px" }}>
               <button

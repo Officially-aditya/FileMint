@@ -30,14 +30,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    //const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user
     const newUser = new User({
       firstName,
       lastName,
       email,
-      password: hashedPassword,
+      password,
       termsAccepted,
     });
 
