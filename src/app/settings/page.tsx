@@ -1,8 +1,40 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"account" | "subscription" | "settings">("account");
+
+  const [userData, setUserData] = useState({
+    firstName: "Olivia",
+    lastName: "Bennet",
+    email: "oliviabennet123@gmail.com",
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/api/user/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setUserData({
+          firstName: response.data.user.firstName,
+          lastName: response.data.user.lastName,
+          email: response.data.user.email,
+        });
+      } catch (error) {
+        console.warn("Using fallback boilerplate data due to error:", error);
+        // fallback to default boilerplate data (already set)
+      }
+    };
+
+    fetchData();
+  }, []);
+
 
   const SidebarItem = (label: string, key: "account" | "subscription" | "settings") => (
     <div
@@ -102,9 +134,10 @@ const SettingsPage: React.FC = () => {
               <div style={{ color: "#000", fontSize: "16px", cursor: "pointer" }}>✏️ Update profile</div>
             </div>
 
+            {/* Inside Account Tab */}
             <div>
               <div style={{ fontWeight: 600, marginTop: "1rem" }}>Email</div>
-              <div style={{ margin: "4px 0" }}>oliviabennet123@gmail.com</div>
+              <div style={{ margin: "4px 0" }}>{userData.email}</div>
               <div style={{ color: "#304ffe", textDecoration: "underline", cursor: "pointer" }}>Change</div>
             </div>
 
@@ -112,6 +145,7 @@ const SettingsPage: React.FC = () => {
               <label>First Name</label>
               <input
                 type="text"
+                value={userData.firstName}
                 placeholder="First Name"
                 style={{
                   padding: "15px 10px",
@@ -121,10 +155,12 @@ const SettingsPage: React.FC = () => {
                   marginTop: "0.5rem",
                   marginBottom: "0.8rem",
                 }}
+                readOnly
               />
               <label>Last Name</label>
               <input
                 type="text"
+                value={userData.lastName}
                 placeholder="Last Name"
                 style={{
                   padding: "15px 10px",
@@ -134,7 +170,9 @@ const SettingsPage: React.FC = () => {
                   marginTop: "0.5rem",
                   marginBottom: "0.8rem",
                 }}
+                readOnly
               />
+
               <button
                 style={{
                   backgroundColor: "#1e2b50",
