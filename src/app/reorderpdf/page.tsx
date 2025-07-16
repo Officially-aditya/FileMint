@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Navbar from "../components/Navbar";
-export default function DeletePdfPagesPage() {
+
+export default function PdfReorderPage() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [isEditingMode, setIsEditingMode] = useState(false);
@@ -12,26 +16,24 @@ export default function DeletePdfPagesPage() {
   const [scale, setScale] = useState(1.2);
   const [pageImages, setPageImages] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectMode, setSelectMode] = useState<"individual" | "range">(
-    "individual"
-  );
+  const [selectMode, setSelectMode] = useState<"individual" | "range">("individual");
   const [rangeStart, setRangeStart] = useState<number | null>(null);
   const [rangeEnd, setRangeEnd] = useState<number | null>(null);
+  const [pageOrder, setPageOrder] = useState<number[]>([]);
+  const [downloadOption, setDownloadOption] = useState<"selected" | "non-selected" | "reorder">("selected");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load PDF.js
   useEffect(() => {
     const script = document.createElement("script");
-    script.src =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-    script.onload = () => {
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    script.onload =()=> {
       // @ts-ignore
       window.pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     };
     document.head.appendChild(script);
 
-    // Corrected cleanup function with no return value
     return () => {
       document.head.removeChild(script);
     };
@@ -64,13 +66,12 @@ export default function DeletePdfPagesPage() {
       const pdf = await loadingTask.promise;
       setPdfDoc(pdf);
       setTotalPages(pdf.numPages);
+      setPageOrder(Array.from({ length: pdf.numPages }, (_, i) => i + 1));
 
-      // Render all pages as images for preview
       const images: string[] = [];
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 0.8 }); // Smaller scale for thumbnails
-
+        const viewport = page.getViewport({ scale: 0.8 });
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
         canvas.height = viewport.height;
@@ -116,7 +117,7 @@ export default function DeletePdfPagesPage() {
       for (let i = rangeStart; i <= rangeEnd; i++) {
         newSelected.add(i);
       }
-      setSelectedPages(newSelected);
+  setSelectedPages(newSelected);
       setRangeStart(null);
       setRangeEnd(null);
     }
@@ -134,25 +135,105 @@ export default function DeletePdfPagesPage() {
     setSelectedPages(new Set());
   };
 
-  const deletePagesAndDownload = async () => {
-    if (!pdfDoc || selectedPages.size === 0) {
-      alert("Please select at least one page to delete.");
-      return;
-    }
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-    if (selectedPages.size >= totalPages) {
-      alert("Cannot delete all pages. At least one page must remain.");
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      setPageOrder((items) => {
+        const oldIndex = items.indexOf(parseInt(active.id));
+        const newIndex = items.indexOf(parseInt(over.id));
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const SortablePage = ({ pageNum, imageUrl, index }: { pageNum: number; imageUrl: string; index: number }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: pageNum.toString() });
+    const isSelected = selectedPages.has(pageNum);
+
+    const style = {
+      border: isSelected ? "3px solid #dc3545" : "2px solid #dee2e6",
+      borderRadius: "8px",
+      padding: "0.5rem",
+      backgroundColor: isSelected ? "#f8d7da" : "white",
+      cursor: selectMode === "individual" ? "pointer" : "move",
+      position: "relative" as const,
+      boxShadow: isSelected ? "0 4px 12px rgba(220, 53, 69, 0.3)" : "0 2px 4px rgba(0,0,0,0.1)",
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        onClick={() => selectMode === "individual" && togglePageSelection(pageNum)}
+      >
+        <img
+          src={imageUrl}
+          alt={`Page ${pageNum}`}
+          style={{
+            width: "100%",
+            height: "auto",
+            display: "block",
+            borderRadius: "4px",
+            opacity: isSelected ? 0.7 : 1,
+          }}
+        />
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: "0.5rem",
+            fontSize: "0.9rem",
+            fontWeight: "bold",
+            color: isSelected ? "#dc3545" : "#495057",
+          }}
+        >
+          Page {pageNum}
+        </div>
+        {isSelected && (
+          <div
+            style={{
+              position: "absolute",
+              top: "0.5rem",
+              right: "0.5rem",
+              backgroundColor: "#dc3545",
+              color: "white",
+              borderRadius: "50%",
+              width: "24oboserver24px",
+              height: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.8rem",
+              fontWeight: "bold",
+            }}
+          >
+            ✓
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const downloadPdf = async () => {
+    if (!pdfDoc || (downloadOption !== "reorder" && selectedPages.size === 0)) {
+      alert("Please select at least one page or choose reorder mode.");
       return;
     }
 
     try {
       setIsProcessing(true);
-
-      // Load PDF-lib
       const script = document.createElement("script");
-      script.src =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
-
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
       await new Promise((resolve) => {
         script.onload = resolve;
         document.head.appendChild(script);
@@ -160,44 +241,43 @@ export default function DeletePdfPagesPage() {
 
       // @ts-ignore
       const { PDFDocument } = window.PDFLib;
-
-      // Read the original PDF
       const arrayBuffer = await pdfFile!.arrayBuffer();
-      const pdfDocLib = await PDFDocument.load(arrayBuffer);
-
-      // Create new PDF with remaining pages
+      const originalPdf = await PDFDocument.load(arrayBuffer);
       const newPdf = await PDFDocument.create();
 
-      // Get pages to keep (not selected for deletion)
-      const pagesToKeep: number[] = [];
-      for (let i = 1; i <= totalPages; i++) {
-        if (!selectedPages.has(i)) {
-          pagesToKeep.push(i - 1); // Convert to 0-based index
-        }
+      let pagesToCopy: number[];
+      if (downloadOption === "reorder") {
+        pagesToCopy = pageOrder.map((pageNum) => pageNum - 1);
+      } else {
+        pagesToCopy = downloadOption === "selected"
+          ? Array.from(selectedPages).sort((a, b) => a - b).map((page) => page - 1)
+          : Array.from({ length: totalPages }, (_, i) => i).filter(
+              (page) => !selectedPages.has(page + 1)
+            );
       }
 
-      // Copy pages that are not selected for deletion
-      const copiedPages = await newPdf.copyPages(pdfDocLib, pagesToKeep);
-      copiedPages.forEach((page:any) => newPdf.addPage(page));
+      const copiedPages = await newPdf.copyPages(originalPdf, pagesToCopy);
+      copiedPages.forEach((page: any) => newPdf.addPage(page));
 
-      // Generate the modified PDF
       const pdfBytes = await newPdf.save();
-
-      // Download the file
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `modified_${pdfFile!.name}`;
+      a.download = `${downloadOption}_${pdfFile!.name}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       alert(
-        `PDF modified successfully! Deleted ${selectedPages.size} pages, kept ${
-          totalPages - selectedPages.size
-        } pages.`
+        downloadOption === "reorder"
+          ? `PDF reordered successfully with ${pageOrder.length} pages.`
+          : `PDF modified successfully! ${
+              downloadOption === "selected"
+                ? `Downloaded ${selectedPages.size} selected pages.`
+                : `Downloaded ${totalPages - selectedPages.size} non-selected pages.`
+            }`
       );
       setIsProcessing(false);
     } catch (error) {
@@ -214,6 +294,7 @@ export default function DeletePdfPagesPage() {
     setPdfDoc(null);
     setRangeStart(null);
     setRangeEnd(null);
+    setPageOrder([]);
   };
 
   if (isEditingMode) {
@@ -241,19 +322,21 @@ export default function DeletePdfPagesPage() {
           >
             ← Back
           </button>
-          <h1 style={{ fontSize: "1.5rem", margin: 0 }}>Delete PDF Pages</h1>
+          <h1 style={{ fontSize: "1.5rem", margin: 0 }}>PDF Page Editor</h1>
           <button
-            onClick={deletePagesAndDownload}
-            disabled={selectedPages.size === 0 || isProcessing}
+            onClick={downloadPdf}
+            disabled={isProcessing || (downloadOption !== "reorder" && selectedPages.size === 0)}
             style={{
               backgroundColor:
-                selectedPages.size > 0 && !isProcessing ? "#dc3545" : "#6c757d",
+                (downloadOption === "reorder" || selectedPages.size > 0) && !isProcessing
+                  ? "#28a745"
+                  : "#6c757d",
               color: "white",
               border: "none",
               padding: "0.6rem 1.2rem",
               borderRadius: "5px",
               cursor:
-                selectedPages.size > 0 && !isProcessing
+                (downloadOption === "reorder" || selectedPages.size > 0) && !isProcessing
                   ? "pointer"
                   : "not-allowed",
               fontSize: "1rem",
@@ -261,8 +344,61 @@ export default function DeletePdfPagesPage() {
           >
             {isProcessing
               ? "Processing..."
-              : `Delete ${selectedPages.size} Pages`}
+              : downloadOption === "reorder"
+              ? "Download Reordered PDF"
+              : `Download ${downloadOption === "selected" ? "Selected" : "Non-selected"} Pages`}
           </button>
+        </div>
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h4 style={{ marginBottom: "0.5rem" }}>Download Option</h4>
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+            <button
+              onClick={() => setDownloadOption("selected")}
+              style={{
+                backgroundColor: downloadOption === "selected" ? "#007bff" : "white",
+                color: downloadOption === "selected" ? "white" : "#007bff",
+                border: "1px solid #007bff",
+                padding: "0.4rem 0.8rem",
+                borderRadius: "3px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                flex: 1,
+              }}
+            >
+              Selected Pages
+            </button>
+            <button
+              onClick={() => setDownloadOption("non-selected")}
+              style={{
+                backgroundColor: downloadOption === "non-selected" ? "#007bff" : "white",
+                color: downloadOption === "non-selected" ? "white" : "#007bff",
+                border: "1px solid #007bff",
+                padding: "0.4rem 0.8rem",
+                borderRadius: "3px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                flex: 1,
+              }}
+            >
+              Non-selected Pages
+            </button>
+            <button
+              onClick={() => setDownloadOption("reorder")}
+              style={{
+                backgroundColor: downloadOption === "reorder" ? "#007bff" : "white",
+                color: downloadOption === "reorder" ? "white" : "#007bff",
+                border: "1px solid #007bff",
+                padding: "0.4rem 0.8rem",
+                borderRadius: "3px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                flex: 1,
+              }}
+            >
+              Reorder Pages
+            </button>
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: "2rem" }}>
@@ -278,21 +414,16 @@ export default function DeletePdfPagesPage() {
               top: "2rem",
             }}
           >
-            <h3 style={{ marginTop: 0, marginBottom: "1.5rem" }}>
-              Page Selection
-            </h3>
+            <h3 style={{ marginTop: 0, marginBottom: "1.5rem" }}>Page Selection</h3>
 
             {/* Selection Mode */}
             <div style={{ marginBottom: "1.5rem" }}>
               <h4 style={{ marginBottom: "0.5rem" }}>Selection Mode</h4>
-              <div
-                style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}
-              >
+              <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
                 <button
                   onClick={() => setSelectMode("individual")}
                   style={{
-                    backgroundColor:
-                      selectMode === "individual" ? "#007bff" : "white",
+                    backgroundColor: selectMode === "individual" ? "#007bff" : "white",
                     color: selectMode === "individual" ? "white" : "#007bff",
                     border: "1px solid #007bff",
                     padding: "0.4rem 0.8rem",
@@ -307,8 +438,7 @@ export default function DeletePdfPagesPage() {
                 <button
                   onClick={() => setSelectMode("range")}
                   style={{
-                    backgroundColor:
-                      selectMode === "range" ? "#007bff" : "white",
+                    backgroundColor: selectMode === "range" ? "#007bff" : "white",
                     color: selectMode === "range" ? "white" : "#007bff",
                     border: "1px solid #007bff",
                     padding: "0.4rem 0.8rem",
@@ -341,9 +471,7 @@ export default function DeletePdfPagesPage() {
                     min="1"
                     max={totalPages}
                     value={rangeStart || ""}
-                    onChange={(e) =>
-                      setRangeStart(parseInt(e.target.value) || null)
-                    }
+                    onChange={(e) => setRangeStart(parseInt(e.target.value) || null)}
                     style={{
                       width: "60px",
                       padding: "0.3rem",
@@ -359,9 +487,7 @@ export default function DeletePdfPagesPage() {
                     min="1"
                     max={totalPages}
                     value={rangeEnd || ""}
-                    onChange={(e) =>
-                      setRangeEnd(parseInt(e.target.value) || null)
-                    }
+                    onChange={(e) => setRangeEnd(parseInt(e.target.value) || null)}
                     style={{
                       width: "60px",
                       padding: "0.3rem",
@@ -376,17 +502,13 @@ export default function DeletePdfPagesPage() {
                   disabled={!rangeStart || !rangeEnd || rangeStart > rangeEnd}
                   style={{
                     backgroundColor:
-                      rangeStart && rangeEnd && rangeStart <= rangeEnd
-                        ? "#28a745"
-                        : "#6c757d",
+                      rangeStart && rangeEnd && rangeStart <= rangeEnd ? "#28a745" : "#6c757d",
                     color: "white",
                     border: "none",
                     padding: "0.4rem 0.8rem",
                     borderRadius: "3px",
                     cursor:
-                      rangeStart && rangeEnd && rangeStart <= rangeEnd
-                        ? "pointer"
-                        : "not-allowed",
+                      rangeStart && rangeEnd && rangeStart <= rangeEnd ? "pointer" : "not-allowed",
                     fontSize: "0.9rem",
                     width: "100%",
                   }}
@@ -399,13 +521,7 @@ export default function DeletePdfPagesPage() {
             {/* Quick Actions */}
             <div style={{ marginBottom: "1.5rem" }}>
               <h4 style={{ marginBottom: "0.5rem" }}>Quick Actions</h4>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  marginBottom: "0.5rem",
-                }}
-              >
+              <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
                 <button
                   onClick={selectAllPages}
                   style={{
@@ -452,11 +568,10 @@ export default function DeletePdfPagesPage() {
                 <strong>Total Pages:</strong> {totalPages}
               </div>
               <div style={{ fontSize: "0.9rem", marginBottom: "0.5rem" }}>
-                <strong>Selected for Deletion:</strong> {selectedPages.size}
+                <strong>Selected Pages:</strong> {selectedPages.size}
               </div>
               <div style={{ fontSize: "0.9rem", color: "#28a745" }}>
-                <strong>Remaining Pages:</strong>{" "}
-                {totalPages - selectedPages.size}
+                <strong>Remaining Pages:</strong> {totalPages - selectedPages.size}
               </div>
             </div>
 
@@ -472,13 +587,11 @@ export default function DeletePdfPagesPage() {
             >
               <strong>How to use:</strong>
               <br />
-              1. Click pages to select/deselect
+              1. Select pages to include/exclude or drag to reorder
               <br />
-              2. Or use range selection
+              2. Choose download option (Selected, Non-selected, or Reorder)
               <br />
-              3. Selected pages will be deleted
-              <br />
-              4. Click "Delete Pages" when ready
+              3. Click "Download" to generate the new PDF
             </div>
           </div>
 
@@ -498,87 +611,27 @@ export default function DeletePdfPagesPage() {
                 Loading PDF pages...
               </div>
             ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                  gap: "1rem",
-                  padding: "1rem",
-                }}
-              >
-                {pageImages.map((imageUrl, index) => {
-                  const pageNum = index + 1;
-                  const isSelected = selectedPages.has(pageNum);
-                  return (
-                    <div
-                      key={pageNum}
-                      onClick={() =>
-                        selectMode === "individual" &&
-                        togglePageSelection(pageNum)
-                      }
-                      style={{
-                        border: isSelected
-                          ? "3px solid #dc3545"
-                          : "2px solid #dee2e6",
-                        borderRadius: "8px",
-                        padding: "0.5rem",
-                        backgroundColor: isSelected ? "#f8d7da" : "white",
-                        cursor:
-                          selectMode === "individual" ? "pointer" : "default",
-                        position: "relative",
-                        boxShadow: isSelected
-                          ? "0 4px 12px rgba(220, 53, 69, 0.3)"
-                          : "0 2px 4px rgba(0,0,0,0.1)",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <img
-                        src={imageUrl}
-                        alt={`Page ${pageNum}`}
-                        style={{
-                          width: "100%",
-                          height: "auto",
-                          display: "block",
-                          borderRadius: "4px",
-                          opacity: isSelected ? 0.7 : 1,
-                        }}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={pageOrder.map(String)}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                      gap: "1rem",
+                      padding: "1rem",
+                    }}
+                  >
+                    {pageImages.map((imageUrl, index) => (
+                      <SortablePage
+                        key={pageOrder[index]}
+                        pageNum={pageOrder[index]}
+                        imageUrl={imageUrl}
+                        index={index}
                       />
-                      <div
-                        style={{
-                          textAlign: "center",
-                          marginTop: "0.5rem",
-                          fontSize: "0.9rem",
-                          fontWeight: "bold",
-                          color: isSelected ? "#dc3545" : "#495057",
-                        }}
-                      >
-                        Page {pageNum}
-                      </div>
-                      {isSelected && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            top: "0.5rem",
-                            right: "0.5rem",
-                            backgroundColor: "#dc3545",
-                            color: "white",
-                            borderRadius: "50%",
-                            width: "24px",
-                            height: "24px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "0.8rem",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          ✓
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
         </div>
@@ -589,12 +642,8 @@ export default function DeletePdfPagesPage() {
   return (
     <>
       <Navbar />
-      <div
-        style={{ maxWidth: "900px", margin: "4rem auto", padding: "0 2rem" }}
-      >
-        <h1 style={{ fontSize: "2rem", marginBottom: "2rem" }}>
-          Delete PDF Pages
-        </h1>
+      <div style={{ maxWidth: "900px", margin: "4rem auto", padding: "0 2rem" }}>
+        <h1 style={{ fontSize: "2rem", marginBottom: "2rem" }}>PDF Page Editor</h1>
 
         <div
           onDrop={handleDrop}
@@ -608,20 +657,12 @@ export default function DeletePdfPagesPage() {
             marginBottom: "2rem",
           }}
         >
-          <div
-            style={{ fontSize: "3rem", color: "#dc3545", marginBottom: "1rem" }}
-          >
-            <i className="fa fa-pdf"></i>
-            <i className="fa fa-scissors"></i>
+          <div style={{ fontSize: "3rem", color: "#dc3545", marginBottom: "1rem" }}>
+            <i className="fa fa-file-pdf"></i>
+            <i className="fa fa-arrows-alt"></i>
           </div>
-          <p
-            style={{
-              marginTop: "1rem",
-              marginBottom: "1rem",
-              fontSize: "1.1rem",
-            }}
-          >
-            Drag and drop a PDF file to remove pages
+          <p style={{ marginTop: "1rem", marginBottom: "1rem", fontSize: "1.1rem" }}>
+            Drag and drop a PDF file to edit or reorder pages
           </p>
           <label
             htmlFor="fileInput"
@@ -662,19 +703,11 @@ export default function DeletePdfPagesPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center" }}>
-                <div
-                  style={{
-                    fontSize: "1.5rem",
-                    color: "#dc3545",
-                    marginRight: "0.75rem",
-                  }}
-                >
-
+                <div style={{ fontSize: "1.5rem", color: "#dc3545", marginRight: "0.75rem" }}>
+                  <i className="fa fa-file-pdf"></i>
                 </div>
                 <div>
-                  <div style={{ fontWeight: "bold", fontSize: "1rem" }}>
-                    {pdfFile.name}
-                  </div>
+                  <div style={{ fontWeight: "bold", fontSize: "1rem" }}>{pdfFile.name}</div>
                   <div style={{ fontSize: "0.9rem", color: "#666" }}>
                     {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
                   </div>
@@ -721,7 +754,7 @@ export default function DeletePdfPagesPage() {
           style={{
             marginTop: "3rem",
             padding: "1.5rem",
-            backgroundColor:  "rgb(253, 242, 242)",
+            backgroundColor: "rgb(253, 242, 242)",
             border: "1px solid red",
             borderRadius: "10px",
             fontSize: "0.95rem",
@@ -729,13 +762,13 @@ export default function DeletePdfPagesPage() {
         >
           <strong>⚠️ Important:</strong>
           <p style={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}>
-            This tool allows you to permanently delete pages from your PDF.
-            Please review your selection carefully before downloading.
+            This tool allows you to select, delete, or reorder pages in your PDF. Review your changes
+            carefully before downloading.
           </p>
           <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
-            <li>Select individual pages or ranges of pages</li>
-            <li>Preview all pages before deletion</li>
-            <li>At least one page must remain in the document</li>
+            <li>Select individual pages or ranges for inclusion/exclusion</li>
+            <li>Drag and drop pages to reorder them</li>
+            <li>Preview all pages before finalizing</li>
             <li>The modified PDF will be downloaded automatically</li>
           </ul>
         </div>

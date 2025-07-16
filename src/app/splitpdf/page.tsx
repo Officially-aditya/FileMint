@@ -18,24 +18,93 @@ export default function DeletePdfPagesPage() {
   const [rangeStart, setRangeStart] = useState<number | null>(null);
   const [rangeEnd, setRangeEnd] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [downloadOption, setDownloadOption] = useState<"selected" | "non-selected">("selected");
+
+    const downloadPdf = async () => {
+    if (!pdfDoc || selectedPages.size === 0) {
+        alert("Please select at least one page to download.");
+        return;
+    }
+
+    try {
+        setIsProcessing(true);
+
+        // Load PDF-lib (for PDF manipulation)
+        const script = document.createElement("script");
+        script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+
+        await new Promise((resolve) => {
+        script.onload = resolve;
+        document.head.appendChild(script);
+        });
+
+        // @ts-ignore
+        const { PDFDocument } = window.PDFLib;
+
+        // Read the original PDF
+        const arrayBuffer = await pdfFile!.arrayBuffer();
+        const pdfDocLib = await PDFDocument.load(arrayBuffer);
+
+        // Create new PDF with pages to download (either selected or non-selected)
+        const newPdf = await PDFDocument.create();
+
+        // Get pages to include based on the selection
+        const pagesToInclude: number[] = downloadOption === "selected" 
+        ? Array.from(selectedPages) // Include selected pages
+        : Array.from({ length: totalPages }, (_, i) => i + 1).filter(page => !selectedPages.has(page)); // Include non-selected pages
+
+        // Copy the selected pages to the new PDF
+        const copiedPages = await newPdf.copyPages(pdfDocLib, pagesToInclude.map(page => page - 1)); // Convert to 0-based index
+        copiedPages.forEach((page: any) => newPdf.addPage(page));
+
+        // Generate the modified PDF
+        const pdfBytes = await newPdf.save();
+
+        // Download the file
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${downloadOption}_pages_${pdfFile!.name}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert(
+        `PDF modified successfully! ${
+            downloadOption === "selected" 
+            ? `Downloaded ${selectedPages.size} selected pages.` 
+            : `Downloaded ${totalPages - selectedPages.size} non-selected pages.`
+        }`
+        );
+        setIsProcessing(false);
+    } catch (error) {
+        console.error("Error modifying PDF:", error);
+        alert("Error modifying PDF. Please try again.");
+        setIsProcessing(false);
+    }
+    };
 
   // Load PDF.js
-  useEffect(() => {
+    useEffect(() => {
     const script = document.createElement("script");
     script.src =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
     script.onload = () => {
-      // @ts-ignore
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        // @ts-ignore
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     };
     document.head.appendChild(script);
 
     // Corrected cleanup function with no return value
     return () => {
-      document.head.removeChild(script);
+        document.head.removeChild(script);
     };
-  }, []);
+    }, []);
+
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -134,78 +203,57 @@ export default function DeletePdfPagesPage() {
     setSelectedPages(new Set());
   };
 
-  const deletePagesAndDownload = async () => {
-    if (!pdfDoc || selectedPages.size === 0) {
-      alert("Please select at least one page to delete.");
-      return;
-    }
+const splitPdfAndDownload = async () => {
+  if (!pdfDoc || selectedPages.size === 0) {
+    alert("Please select at least one page to include.");
+    return;
+  }
 
-    if (selectedPages.size >= totalPages) {
-      alert("Cannot delete all pages. At least one page must remain.");
-      return;
-    }
+  try {
+    setIsProcessing(true);
 
-    try {
-      setIsProcessing(true);
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
 
-      // Load PDF-lib
-      const script = document.createElement("script");
-      script.src =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js";
+    await new Promise((resolve) => {
+      script.onload = resolve;
+      document.head.appendChild(script);
+    });
 
-      await new Promise((resolve) => {
-        script.onload = resolve;
-        document.head.appendChild(script);
-      });
+    // @ts-ignore
+    const { PDFDocument } = window.PDFLib;
 
-      // @ts-ignore
-      const { PDFDocument } = window.PDFLib;
+    const arrayBuffer = await pdfFile!.arrayBuffer();
+    const originalPdf = await PDFDocument.load(arrayBuffer);
+    const newPdf = await PDFDocument.create();
 
-      // Read the original PDF
-      const arrayBuffer = await pdfFile!.arrayBuffer();
-      const pdfDocLib = await PDFDocument.load(arrayBuffer);
+    const selectedPagesArray = Array.from(selectedPages).sort((a, b) => a - b);
+    const pagesToCopy = selectedPagesArray.map((pageNum) => pageNum - 1); // convert to 0-based
 
-      // Create new PDF with remaining pages
-      const newPdf = await PDFDocument.create();
+    const copiedPages = await newPdf.copyPages(originalPdf, pagesToCopy);
+    copiedPages.forEach((page:any) => newPdf.addPage(page));
 
-      // Get pages to keep (not selected for deletion)
-      const pagesToKeep: number[] = [];
-      for (let i = 1; i <= totalPages; i++) {
-        if (!selectedPages.has(i)) {
-          pagesToKeep.push(i - 1); // Convert to 0-based index
-        }
-      }
+    const pdfBytes = await newPdf.save();
 
-      // Copy pages that are not selected for deletion
-      const copiedPages = await newPdf.copyPages(pdfDocLib, pagesToKeep);
-      copiedPages.forEach((page:any) => newPdf.addPage(page));
+    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `split_${pdfFile!.name}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-      // Generate the modified PDF
-      const pdfBytes = await newPdf.save();
+    alert(`Split PDF created with ${selectedPages.size} page(s).`);
+    setIsProcessing(false);
+  } catch (error) {
+    console.error("Error splitting PDF:", error);
+    alert("Error creating split PDF. Please try again.");
+    setIsProcessing(false);
+  }
+};
 
-      // Download the file
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `modified_${pdfFile!.name}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      alert(
-        `PDF modified successfully! Deleted ${selectedPages.size} pages, kept ${
-          totalPages - selectedPages.size
-        } pages.`
-      );
-      setIsProcessing(false);
-    } catch (error) {
-      console.error("Error modifying PDF:", error);
-      alert("Error modifying PDF. Please try again.");
-      setIsProcessing(false);
-    }
-  };
 
   const goBack = () => {
     setIsEditingMode(false);
@@ -243,7 +291,7 @@ export default function DeletePdfPagesPage() {
           </button>
           <h1 style={{ fontSize: "1.5rem", margin: 0 }}>Delete PDF Pages</h1>
           <button
-            onClick={deletePagesAndDownload}
+            onClick={splitPdfAndDownload}
             disabled={selectedPages.size === 0 || isProcessing}
             style={{
               backgroundColor:
@@ -263,7 +311,47 @@ export default function DeletePdfPagesPage() {
               ? "Processing..."
               : `Delete ${selectedPages.size} Pages`}
           </button>
-        </div>
+          <div style={{ marginBottom: "1.5rem" }}>
+            <h4 style={{ marginBottom: "0.5rem" }}>Download Option</h4>
+            <div
+                style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}
+            >
+                <button
+                onClick={() => setDownloadOption("selected")}
+                style={{
+                    backgroundColor:
+                    downloadOption === "selected" ? "#007bff" : "white",
+                    color: downloadOption === "selected" ? "white" : "#007bff",
+                    border: "1px solid #007bff",
+                    padding: "0.4rem 0.8rem",
+                    borderRadius: "3px",
+                    cursor: "pointer",
+                    fontSize: "0.9rem",
+                    flex: 1,
+                }}
+                >
+                Selected Pages
+                </button>
+                <button
+                onClick={() => setDownloadOption("non-selected")}
+                style={{
+                    backgroundColor:
+                    downloadOption === "non-selected" ? "#007bff" : "white",
+                    color: downloadOption === "non-selected" ? "white" : "#007bff",
+                    border: "1px solid #007bff",
+                    padding: "0.4rem 0.8rem",
+                    borderRadius: "3px",
+                    cursor: "pointer",
+                    fontSize: "0.9rem",
+                    flex: 1,
+                }}
+                >
+                Non-selected Pages
+                </button>
+            </div>
+            </div>
+
+                    </div>
 
         <div style={{ display: "flex", gap: "2rem" }}>
           {/* Control Panel */}

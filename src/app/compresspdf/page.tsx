@@ -82,7 +82,6 @@ export default function CompressPdfPage() {
   return (
     <div>
       <Navbar />
-
       <div style={{ maxWidth: "900px", margin: "4rem auto", padding: "0 2rem" }}>
         <h1 style={{ fontSize: "2rem", marginBottom: "2rem" }}>Compress PDF</h1>
 
@@ -184,6 +183,31 @@ export default function CompressPdfPage() {
             </button>
           </div>
         )}
+
+        <div style={{ marginBottom: "2rem", textAlign: "center" }}>
+          <p style={{ fontSize: "0.95rem" }}>
+            Easily compress PDF files to reduce their size while maintaining quality.
+          </p>
+        </div>
+
+        <div
+          style={{
+            marginBottom: "2rem",
+            padding: "1.5rem",
+            backgroundColor: "#f0fff0",
+            border: "1px solid #90EE90",
+            borderRadius: "10px",
+            fontSize: "0.95rem",
+            textAlign: "center",
+          }}
+        >
+          <strong style={{ display: "block", marginBottom: "0.5rem" }}>
+            Protected. Encrypted. Automatically Deleted.
+          </strong>
+          <p>
+            Your PDF files are encrypted during upload and automatically deleted after 2 hours. No tracking. No storage. Full privacy.
+          </p>
+        </div>
       </div>
     </div>
   );
