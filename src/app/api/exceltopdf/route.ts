@@ -1,12 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import * as XLSX from 'xlsx';
-import puppeteer from 'puppeteer';
-import { tmpdir } from 'os';
+import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { tmpdir } from 'os';
+import { promisify } from 'util';
+import { NextRequest, NextResponse } from 'next/server';
+
+const execAsync = promisify(exec);
 
 export async function POST(req: NextRequest) {
-  let tempPdfPath = '';
+  let tempXlsxPath = '';
+  let outputDir = '';
+  let pdfPath = '';
 
   try {
     const formData = await req.formData();
@@ -19,52 +23,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const excelFile = files[0];
-    const arrayBuffer = await excelFile.arrayBuffer();
+    const file = files[0];
+    const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // ✅ Read Excel file directly from buffer (no disk write)
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as (string | number)[][];
+    const timestamp = Date.now();
+    const filename = `upload-${timestamp}.xlsx`;
 
-    // ✅ Convert table to basic HTML
-    const htmlTableRows = data
-      .map(
-        (row) =>
-          `<tr>${row.map((cell) => `<td>${cell ?? ''}</td>`).join('')}</tr>`
-      )
-      .join('');
-    const html = `
-      <html>
-        <head>
-          <style>
-            table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; }
-            td, th { border: 1px solid #ddd; padding: 8px; }
-            tr:nth-child(even) { background-color: #f2f2f2; }
-            th { background-color: #4CAF50; color: white; }
-          </style>
-        </head>
-        <body>
-          <h2>${sheetName}</h2>
-          <table>${htmlTableRows}</table>
-        </body>
-      </html>
-    `;
+    tempXlsxPath = path.join(tmpdir(), filename);
+    outputDir = path.join(tmpdir(), `out-${timestamp}`);
 
-    // ✅ Use Puppeteer to generate PDF
-    tempPdfPath = path.join(tmpdir(), `excel-${Date.now()}.pdf`);
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    await page.pdf({ path: tempPdfPath, format: 'A4' });
-    await browser.close();
+    await fs.promises.mkdir(outputDir, { recursive: true });
+    await fs.promises.writeFile(tempXlsxPath, buffer);
 
-    const pdfBuffer = await fs.promises.readFile(tempPdfPath);
+    const stats = await fs.promises.stat(tempXlsxPath);
+    console.log('Saved XLSX path:', tempXlsxPath);
+    console.log('XLSX file size:', stats.size, 'bytes');
+
+    // Convert using LibreOffice CLI
+    const convertCommand = `libreoffice --headless --nologo --nolockcheck --convert-to pdf --outdir "${outputDir}" "${tempXlsxPath}"`;
+
+    console.log('[Running]', convertCommand);
+    const { stdout, stderr } = await execAsync(convertCommand);
+
+    console.log('[LibreOffice stdout]', stdout || '(empty)');
+    console.error('[LibreOffice stderr]', stderr || '(empty)');
+
+    const filesInOut = await fs.promises.readdir(outputDir);
+    const pdfFile = filesInOut.find((f) => f.endsWith('.pdf'));
+
+    if (!pdfFile) {
+      throw new Error('PDF file not created by LibreOffice.');
+    }
+
+    pdfPath = path.join(outputDir, pdfFile);
+    const pdfBuffer = await fs.promises.readFile(pdfPath);
 
     return new NextResponse(pdfBuffer, {
       status: 200,
@@ -76,18 +69,22 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Error during Excel to PDF conversion:', error);
     return new NextResponse(
-      JSON.stringify({
-        error: `Conversion failed: ${error.message}`,
-      }),
+      JSON.stringify({ error: `Conversion failed: ${error.message}` }),
       { status: 500 }
     );
   } finally {
     try {
-      if (tempPdfPath && fs.existsSync(tempPdfPath)) {
-        await fs.promises.unlink(tempPdfPath);
+      if (tempXlsxPath && fs.existsSync(tempXlsxPath)) {
+        await fs.promises.unlink(tempXlsxPath);
+      }
+      if (pdfPath && fs.existsSync(pdfPath)) {
+        await fs.promises.unlink(pdfPath);
+      }
+      if (outputDir && fs.existsSync(outputDir)) {
+        await fs.promises.rm(outputDir, { recursive: true, force: true });
       }
     } catch (cleanupError) {
-      console.error('Error cleaning up PDF temp file:', cleanupError);
+      console.error('Cleanup error:', cleanupError);
     }
   }
 }

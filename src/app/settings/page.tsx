@@ -95,6 +95,10 @@ const SettingsPage: React.FC = () => {
 
         {/* Logout Button */}
         <button
+          onClick={() => {
+            localStorage.removeItem("token");
+            window.location.href = "/login"; // or use a router.push if you're using next/navigation
+          }}
           style={{
             marginTop: "auto",
             width: "80%",

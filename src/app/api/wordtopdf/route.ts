@@ -1,49 +1,67 @@
-//src/app/api/wordtopdf/route.ts
-import puppeteer from 'puppeteer';
+import { exec } from 'child_process';
 import fs from 'fs';
-import { tmpdir } from 'os';
 import path from 'path';
+import { tmpdir } from 'os';
+import { promisify } from 'util';
 import { NextRequest, NextResponse } from 'next/server';
-import mammoth from 'mammoth'; // Use mammoth.js to convert DOCX to HTML
+
+const execAsync = promisify(exec);
 
 export async function POST(req: NextRequest) {
-  let tempFilePath = '';
-  let tempPdfPath = '';
+  let tempDocxPath = '';
+  let outputDir = '';
+  let pdfPath = '';
 
   try {
-    // Get the form data (uploaded files)
     const formData = await req.formData();
     const files = formData.getAll('files') as File[];
 
     if (!files || files.length === 0) {
-      return new NextResponse(
-        JSON.stringify({ error: 'No files provided' }),
-        { status: 400 }
-      );
+      return new NextResponse(JSON.stringify({ error: 'No files provided' }), {
+        status: 400,
+      });
     }
 
-    const docxFile = files[0];
-    const arrayBuffer = await docxFile.arrayBuffer();
-    const docxBuffer = Buffer.from(arrayBuffer);
+    const file = files[0];
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    tempFilePath = path.join(tmpdir(), `docx-${Date.now()}.docx`);
-    tempPdfPath = path.join(tmpdir(), `pdf-${Date.now()}.pdf`);
+    const timestamp = Date.now();
+    const filename = `upload-${timestamp}.docx`;
 
-    await fs.promises.writeFile(tempFilePath, docxBuffer);
+    tempDocxPath = path.join(tmpdir(), filename);
+    outputDir = path.join(tmpdir(), `out-${timestamp}`);
 
-    const htmlContent = await mammoth.convertToHtml({ path: tempFilePath });
-    const html = htmlContent.value;
+    await fs.promises.mkdir(outputDir, { recursive: true });
+    await fs.promises.writeFile(tempDocxPath, buffer);
 
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+    // Confirm file exists and log details
+    if (!fs.existsSync(tempDocxPath)) {
+      throw new Error(`DOCX file was not saved to disk: ${tempDocxPath}`);
+    }
+    const stats = await fs.promises.stat(tempDocxPath);
+    console.log('Saved DOCX path:', tempDocxPath);
+    console.log('DOCX file size:', stats.size, 'bytes');
 
-    await page.setContent(html);
+    // Run LibreOffice conversion
+    const convertCommand = `libreoffice --headless --nologo --nolockcheck --convert-to pdf --outdir "${outputDir}" "${tempDocxPath}"`;
 
-    await page.pdf({ path: tempPdfPath });
+    console.log('[Running]', convertCommand);
+    const { stdout, stderr } = await execAsync(convertCommand);
 
-    await browser.close();
+    console.log('[LibreOffice stdout]', stdout || '(empty)');
+    console.error('[LibreOffice stderr]', stderr || '(empty)');
 
-    const pdfBuffer = await fs.promises.readFile(tempPdfPath);
+    // Find the first PDF in the output directory
+    const filesInOut = await fs.promises.readdir(outputDir);
+    const pdfFile = filesInOut.find((f) => f.endsWith('.pdf'));
+
+    if (!pdfFile) {
+      throw new Error('PDF file not created by LibreOffice.');
+    }
+
+    pdfPath = path.join(outputDir, pdfFile);
+    const pdfBuffer = await fs.promises.readFile(pdfPath);
 
     return new NextResponse(pdfBuffer, {
       status: 200,
@@ -56,20 +74,23 @@ export async function POST(req: NextRequest) {
     console.error('Error during DOCX to PDF conversion:', error);
     return new NextResponse(
       JSON.stringify({
-        error: `An error occurred during file upload or conversion: ${error.message}`,
+        error: `An error occurred: ${error.message}`,
       }),
       { status: 500 }
     );
   } finally {
     try {
-      if (tempFilePath && fs.existsSync(tempFilePath)) {
-        await fs.promises.unlink(tempFilePath);
+      if (tempDocxPath && fs.existsSync(tempDocxPath)) {
+        await fs.promises.unlink(tempDocxPath);
       }
-      if (tempPdfPath && fs.existsSync(tempPdfPath)) {
-        await fs.promises.unlink(tempPdfPath);
+      if (pdfPath && fs.existsSync(pdfPath)) {
+        await fs.promises.unlink(pdfPath);
+      }
+      if (outputDir && fs.existsSync(outputDir)) {
+        await fs.promises.rm(outputDir, { recursive: true, force: true }); // ✅ updated to avoid deprecation
       }
     } catch (cleanupError) {
-      console.error('Error during cleanup:', cleanupError);
+      console.error('Cleanup error:', cleanupError);
     }
   }
 }

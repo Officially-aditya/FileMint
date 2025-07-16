@@ -1,12 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { tmpdir } from 'os';
+import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import AdmZip from 'adm-zip';
-import puppeteer from 'puppeteer';
+import { tmpdir } from 'os';
+import { promisify } from 'util';
+import { NextRequest, NextResponse } from 'next/server';
+
+const execAsync = promisify(exec);
 
 export async function POST(req: NextRequest) {
-  let tempPdfPath = '';
+  let tempPptxPath = '';
+  let outputDir = '';
+  let pdfPath = '';
 
   try {
     const formData = await req.formData();
@@ -23,59 +27,38 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await pptFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // ✅ Use adm-zip to read .pptx structure
-    const zip = new AdmZip(buffer);
-    const slideFiles = zip.getEntries().filter(
-      entry =>
-        entry.entryName.startsWith('ppt/slides/slide') &&
-        entry.entryName.endsWith('.xml')
-    );
+    const timestamp = Date.now();
+    const filename = `upload-${timestamp}.pptx`;
 
-    const slideTitles: string[] = [];
+    tempPptxPath = path.join(tmpdir(), filename);
+    outputDir = path.join(tmpdir(), `out-${timestamp}`);
 
-    for (const slide of slideFiles) {
-      const xml = slide.getData().toString('utf8');
-      const matches = xml.match(/<a:t>([^<]+)<\/a:t>/g);
-      if (matches) {
-        const text = matches.map(m => m.replace(/<\/?a:t>/g, '')).join(' ');
-        slideTitles.push(text);
-      } else {
-        slideTitles.push('Untitled Slide');
-      }
+    await fs.promises.mkdir(outputDir, { recursive: true });
+    await fs.promises.writeFile(tempPptxPath, buffer);
+
+    // Log for debug
+    const stats = await fs.promises.stat(tempPptxPath);
+    console.log('Saved PPTX path:', tempPptxPath);
+    console.log('PPTX file size:', stats.size, 'bytes');
+
+    // Convert using LibreOffice
+    const convertCommand = `libreoffice --headless --nologo --nolockcheck --convert-to pdf --outdir "${outputDir}" "${tempPptxPath}"`;
+
+    console.log('[Running]', convertCommand);
+    const { stdout, stderr } = await execAsync(convertCommand);
+
+    console.log('[LibreOffice stdout]', stdout || '(empty)');
+    console.error('[LibreOffice stderr]', stderr || '(empty)');
+
+    const filesInOut = await fs.promises.readdir(outputDir);
+    const pdfFile = filesInOut.find((f) => f.endsWith('.pdf'));
+
+    if (!pdfFile) {
+      throw new Error('PDF file not created by LibreOffice.');
     }
 
-    const html = `
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 2rem; }
-            .slide { page-break-after: always; border: 2px solid #ccc; padding: 2rem; margin-bottom: 2rem; }
-            h2 { margin-top: 0; color: #d9534f; }
-          </style>
-        </head>
-        <body>
-          ${slideTitles
-            .map(
-              (title, i) =>
-                `<div class="slide"><h2>Slide ${i + 1}</h2><p>${title}</p></div>`
-            )
-            .join('')}
-        </body>
-      </html>
-    `;
-
-    // ✅ Generate PDF
-    tempPdfPath = path.join(tmpdir(), `ppt-${Date.now()}.pdf`);
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    await page.pdf({ path: tempPdfPath, format: 'A4' });
-    await browser.close();
-
-    const pdfBuffer = await fs.promises.readFile(tempPdfPath);
+    pdfPath = path.join(outputDir, pdfFile);
+    const pdfBuffer = await fs.promises.readFile(pdfPath);
 
     return new NextResponse(pdfBuffer, {
       status: 200,
@@ -92,11 +75,17 @@ export async function POST(req: NextRequest) {
     );
   } finally {
     try {
-      if (tempPdfPath && fs.existsSync(tempPdfPath)) {
-        await fs.promises.unlink(tempPdfPath);
+      if (tempPptxPath && fs.existsSync(tempPptxPath)) {
+        await fs.promises.unlink(tempPptxPath);
+      }
+      if (pdfPath && fs.existsSync(pdfPath)) {
+        await fs.promises.unlink(pdfPath);
+      }
+      if (outputDir && fs.existsSync(outputDir)) {
+        await fs.promises.rm(outputDir, { recursive: true, force: true });
       }
     } catch (cleanupError) {
-      console.error('Error cleaning up PDF temp file:', cleanupError);
+      console.error('Cleanup error:', cleanupError);
     }
   }
 }
