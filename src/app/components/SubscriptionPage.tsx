@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from './button'; // Ensure the correct path for the Button component
 
 export default function SubscriptionPage() {
   return (

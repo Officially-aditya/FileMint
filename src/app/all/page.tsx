@@ -112,16 +112,6 @@ const convertFromPDF = [
     route: "/pdftoword",
   },
   {
-    title: "PDF to Excel",
-    description: "Export tables and data from PDF to Excel.",
-    route: "/pdftoexcel",
-  },
-  {
-    title: "PDF to PowerPoint",
-    description: "Turn your PDF slides back into PowerPoint files.",
-    route: "/pdftoppt",
-  },
-  {
     title: "PDF to JPG",
     description: "Export PDF pages as high-quality JPG images.",
     route: "/pdftojpg",
@@ -180,11 +170,6 @@ const advancedTools = [
     route: "/comparepdf",
   },
   {
-    title: "Optimize PDF (Web/Print)",
-    description: "Optimize for fast web viewing or high-res printing.",
-    route: "/optimizepdf",
-  },
-  {
     title: "Add Watermark & Remove",
     description: "Stamp or remove watermarks from your PDFs.",
     route: "/watermark",
@@ -203,7 +188,7 @@ const advancedTools = [
 
 const premiumTools = [
   {
-    title: "All PDF Summarizer",
+    title: "AI PDF Summarizer",
     description: "AI summaries of any PDF document.",
     route: "/summarizer",
   },
@@ -213,14 +198,9 @@ const premiumTools = [
     route: "/translate",
   },
   {
-    title: "All Questions Generator",
+    title: "AI Questions Generator",
     description: "Generate quiz questions from your PDF.",
     route: "/quiz",
-  },
-  {
-    title: "Bulk Upload",
-    description: "Upload and process hundreds of PDFs at once.",
-    route: "/bulk-upload",
   },
 ];
 
@@ -366,9 +346,6 @@ export default function AllToolsPage() {
     Privacy Policy
   </Link>
 </nav>
-
-
-
 
             {/* Social Icons */}
             <div style={{ display: "flex", gap: "1rem" }}>
