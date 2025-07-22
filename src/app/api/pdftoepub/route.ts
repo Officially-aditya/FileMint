@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pdfParse from 'pdf-parse';
-import { promisify } from 'util';
-import { tmpdir } from 'os';
+import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { promisify } from 'util';
 
-const EPUB = require('epub-gen');
+const execPromise = promisify(exec);
 
 export async function POST(req: NextRequest) {
-  const tempPath = path.join(tmpdir(), `pdf-${Date.now()}.epub`);
+  const tempDir = path.join('/tmp', `pdf-to-epub-${Date.now()}`);
+  const pdfPath = path.join(tempDir, 'input.pdf');
+  const epubPath = path.join(tempDir, 'output.epub');
 
   try {
+    // Ensure the temporary directory exists
+    await fs.promises.mkdir(tempDir, { recursive: true });
+
     const formData = await req.formData();
     const files = formData.getAll('files') as File[];
 
@@ -22,31 +26,26 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await pdfFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    const pdfData = await pdfParse(buffer);
-    const plainText = pdfData.text;
+    // Save the uploaded PDF to the temporary directory
+    await fs.promises.writeFile(pdfPath, buffer);
 
-    if (!plainText.trim()) {
-      throw new Error("No extractable text in PDF.");
+    // Convert the PDF to EPUB using calibre's ebook-convert
+    const convertCommand = `ebook-convert ${pdfPath} ${epubPath}`;
+
+    // Run the command to convert PDF to EPUB
+    const { stdout, stderr } = await execPromise(convertCommand);
+
+    // Log stdout and stderr from the ebook-convert command
+    console.log("Calibre stdout:", stdout);
+    console.error("Calibre stderr:", stderr);
+
+    // Check if the output EPUB file was created
+    if (!fs.existsSync(epubPath)) {
+      throw new Error('EPUB file was not created.');
     }
 
-    const chapters = plainText
-      .split(/\f/)
-      .filter(Boolean)
-      .map((text, i) => ({
-        title: `Page ${i + 1}`,
-        data: `<p>${text.replace(/\n/g, "<br/>")}</p>`,
-      }));
-
-    await new EPUB(
-      {
-        title: "Converted PDF",
-        author: "PDF2EPUB",
-        output: tempPath,
-        content: chapters,
-      },
-    ).promise;
-
-    const epubBuffer = await fs.promises.readFile(tempPath);
+    // Read the generated EPUB file
+    const epubBuffer = await fs.promises.readFile(epubPath);
 
     return new NextResponse(epubBuffer, {
       status: 200,
@@ -63,8 +62,9 @@ export async function POST(req: NextRequest) {
     );
   } finally {
     try {
-      if (fs.existsSync(tempPath)) {
-        await fs.promises.unlink(tempPath);
+      // Clean up the temporary directory and its contents
+      if (fs.existsSync(tempDir)) {
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
       }
     } catch (err) {
       console.error("Cleanup failed:", err);

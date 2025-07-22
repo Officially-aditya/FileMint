@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Navbar from '../components/Navbar';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -10,7 +11,6 @@ export default function ComparePDF() {
   const [file1, setFile1] = useState<File | null>(null);
   const [file2, setFile2] = useState<File | null>(null);
 
-  // Renders PDF pages and sets up highlight canvases
   const renderAllPages = async (
     file: File,
     containerRef: React.RefObject<HTMLDivElement>,
@@ -32,7 +32,6 @@ export default function ComparePDF() {
       const page = await pdf.getPage(pageNum);
       const viewport = page.getViewport({ scale });
 
-      // PDF canvas
       const pdfCanvas = document.createElement('canvas');
       const pdfCtx = pdfCanvas.getContext('2d');
       if (!pdfCtx) continue;
@@ -42,7 +41,6 @@ export default function ComparePDF() {
 
       await page.render({ canvasContext: pdfCtx, viewport }).promise;
 
-      // Wrapper for page + overlays
       const wrapper = document.createElement('div');
       wrapper.style.position = 'relative';
       wrapper.style.width = `${viewport.width}px`;
@@ -52,7 +50,6 @@ export default function ComparePDF() {
       wrapper.appendChild(pdfCanvas);
 
       if (allowHighlight) {
-        // Create perm and temp highlight canvases
         const permCanvas = document.createElement('canvas');
         permCanvas.width = viewport.width;
         permCanvas.height = viewport.height;
@@ -81,7 +78,6 @@ export default function ComparePDF() {
     }
   };
 
-  // Setup highlighting with two canvases: temp (draw live) + perm (commit)
   const setupHighlightCanvas = (
     tempCanvas: HTMLCanvasElement,
     permCanvas: HTMLCanvasElement
@@ -90,7 +86,7 @@ export default function ComparePDF() {
     const permCtx = permCanvas.getContext('2d');
     if (!tempCtx || !permCtx) return;
 
-    const strokeStyle = 'rgba(255, 255, 153, 0.15)'; // subtle yellow
+    const strokeStyle = 'rgba(255, 255, 153, 0.15)';
     const lineWidth = 15;
 
     let isDrawing = false;
@@ -133,10 +129,7 @@ export default function ComparePDF() {
     const end = () => {
       if (!isDrawing) return;
       isDrawing = false;
-
-      // Commit temp canvas drawing to perm canvas
       permCtx.drawImage(tempCanvas, 0, 0);
-      // Clear temp canvas
       tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
     };
 
@@ -146,7 +139,6 @@ export default function ComparePDF() {
     tempCanvas.addEventListener('mouseleave', end);
   };
 
-  // Export annotated PDF (only first container for simplicity)
   const exportAnnotatedPDF = async () => {
     if (!containerRef1.current) return;
     const pdf = new jsPDF();
@@ -155,8 +147,6 @@ export default function ComparePDF() {
 
     for (let i = 0; i < pages.length; i++) {
       const pageDiv = pages[i] as HTMLElement;
-
-      // Use html2canvas to capture both PDF and highlights
       const canvas = await html2canvas(pageDiv, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
 
@@ -179,58 +169,138 @@ export default function ComparePDF() {
   }, [file2]);
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Compare PDFs with Highlighting</h1>
-      <div
-        style={{
-          display: 'flex',
-          gap: '2rem',
-          flexWrap: 'wrap',
-          justifyContent: 'space-between',
-        }}
-      >
-        {/* PDF 1 (highlightable) */}
-        <div style={{ flex: '1 1 48%', maxHeight: '80vh', overflowY: 'auto' }}>
-          <h2>PDF 1 (Annotatable)</h2>
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => e.target.files && setFile1(e.target.files[0])}
-          />
-          <div
-            ref={containerRef1}
-            style={{
-              marginTop: '1rem',
-              border: '1px solid #ccc',
-              padding: '0.5rem',
-            }}
-          />
-          {file1 && (
-            <button
-              onClick={exportAnnotatedPDF}
-              style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}
-            >
-              Download Annotated PDF
-            </button>
-          )}
-        </div>
+    <div>
+      <Navbar />
+      <div style={{ maxWidth: '1300px', margin: '4rem auto', padding: '0 2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem' }}>
+          Compare PDFs with Highlighting
+        </h1>
 
-        {/* PDF 2 (readonly) */}
-        <div style={{ flex: '1 1 48%', maxHeight: '80vh', overflowY: 'auto' }}>
-          <h2>PDF 2</h2>
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => e.target.files && setFile2(e.target.files[0])}
-          />
-          <div
-            ref={containerRef2}
-            style={{
-              marginTop: '1rem',
-              border: '1px solid #ccc',
-              padding: '0.5rem',
-            }}
-          />
+        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'nowrap', alignItems: 'flex-start', overflowX: 'auto' }}>
+          {/* Annotatable PDF */}
+          <div style={{ flex: '1 1 48%' }}>
+            <h2 style={{ marginBottom: '1rem' }}>PDF 1 (Annotatable)</h2>
+
+            <div
+              onDrop={(e) => {
+                e.preventDefault();
+                const dropped = e.dataTransfer.files[0];
+                if (dropped?.type === 'application/pdf') setFile1(dropped);
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              style={{
+                border: '2px dashed #90ee90',
+                backgroundColor: '#f0fff0',
+                padding: '3rem',
+                borderRadius: '10px',
+                textAlign: 'center',
+              }}
+            >
+              <p>Drag & drop PDF here or</p>
+              <label
+                htmlFor="file1Input"
+                style={{
+                  backgroundColor: 'white',
+                  padding: '0.5rem 1rem',
+                  border: '1px solid #ccc',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                }}
+              >
+                Select File
+                <input
+                  id="file1Input"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => e.target.files && setFile1(e.target.files[0])}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+
+            <div
+              ref={containerRef1}
+              style={{
+                marginTop: '1rem',
+                border: '1px solid #ddd',
+                padding: '0.5rem',
+                maxHeight: '60vh',
+                overflowY: 'auto',
+                backgroundColor: '#fff',
+              }}
+            />
+            {file1 && (
+              <button
+                onClick={exportAnnotatedPDF}
+                style={{
+                  marginTop: '1rem',
+                  backgroundColor: '#007bff',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: '5px',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Download Annotated PDF
+              </button>
+            )}
+          </div>
+
+          {/* Readonly PDF */}
+          <div style={{ flex: '1 1 48%' }}>
+            <h2 style={{ marginBottom: '1rem' }}>PDF 2 (Read Only)</h2>
+
+            <div
+              onDrop={(e) => {
+                e.preventDefault();
+                const dropped = e.dataTransfer.files[0];
+                if (dropped?.type === 'application/pdf') setFile2(dropped);
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              style={{
+                border: '2px dashed #90ee90',
+                backgroundColor: '#f0fff0',
+                padding: '3rem',
+                borderRadius: '10px',
+                textAlign: 'center',
+              }}
+            >
+              <p>Drag & drop PDF here or</p>
+              <label
+                htmlFor="file2Input"
+                style={{
+                  backgroundColor: 'white',
+                  padding: '0.5rem 1rem',
+                  border: '1px solid #ccc',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                }}
+              >
+                Select File
+                <input
+                  id="file2Input"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => e.target.files && setFile2(e.target.files[0])}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+
+            <div
+              ref={containerRef2}
+              style={{
+                marginTop: '1rem',
+                border: '1px solid #ddd',
+                padding: '0.5rem',
+                maxHeight: '60vh',
+                overflowY: 'auto',
+                backgroundColor: '#fff',
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
