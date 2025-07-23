@@ -170,8 +170,8 @@ const advancedTools = [
     route: "/comparepdf",
   },
   {
-    title: "Add Watermark & Remove",
-    description: "Stamp or remove watermarks from your PDFs.",
+    title: "Add Watermark",
+    description: "Easily Stamp watermarks to your PDFs.",
     route: "/watermark",
   },
   {
@@ -182,7 +182,7 @@ const advancedTools = [
   {
     title: "API & Upload",
     description: "Integrate our tools into your own apps via API.",
-    route: "/api",
+    route: "/integrate",
   },
 ];
 
